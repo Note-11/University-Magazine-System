@@ -1,0 +1,82 @@
+CREATE DATABASE dbuniversity;
+
+CREATE TABLE tblrole (
+    roleid INT AUTO_INCREMENT PRIMARY KEY,
+    rolename VARCHAR(50) NOT NULL UNIQUE
+);
+
+CREATE TABLE tblfaculty (
+    facultyid INT AUTO_INCREMENT PRIMARY KEY,
+    facultyname VARCHAR(100) NOT NULL,
+    description VARCHAR(255)
+);
+
+CREATE TABLE tbluser (
+    userid INT AUTO_INCREMENT PRIMARY KEY,
+    facultyid INT,
+    roleid INT NOT NULL,
+    username VARCHAR(100) NOT NULL UNIQUE,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE tblacademicyear (
+    academicyearid INT AUTO_INCREMENT PRIMARY KEY,
+    yearname VARCHAR(50) NOT NULL,
+    submission_closure_date DATE NOT NULL,
+    final_closure_date DATE NOT NULL
+);
+CREATE TABLE tblcategory (
+    categoryid INT AUTO_INCREMENT PRIMARY KEY,
+    academicyearid INT NOT NULL,
+    categoryname VARCHAR(100) NOT NULL,
+    categorystartdate DATE NOT NULL,
+    categoryclosuredate DATE NOT NULL,
+    FOREIGN KEY (academicyearid) REFERENCES tblacademicyear(academicyearid)
+);
+CREATE TABLE tblcontribution (
+    contributionid INT AUTO_INCREMENT PRIMARY KEY,
+    studentid INT NOT NULL,
+    categoryid INT NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    description TEXT,
+    submission_date DATE NOT NULL,
+    status ENUM('draft','submitted','selected','rejected') NOT NULL DEFAULT 'draft',
+    is_selected_for_publication BOOLEAN DEFAULT FALSE,
+    selected_by INT,
+    selecteddate DATE,
+    filepath1 VARCHAR(255),
+    filepath2 VARCHAR(255),
+    filepath3 VARCHAR(255),
+    FOREIGN KEY (studentid) REFERENCES tbluser(userid),
+    FOREIGN KEY (categoryid) REFERENCES tblcategory(categoryid),
+    FOREIGN KEY (selected_by) REFERENCES tbluser(userid)
+);
+CREATE TABLE tblcomment (
+    commentid INT AUTO_INCREMENT PRIMARY KEY,
+    contributionid INT NOT NULL,
+    coordinatorid INT NOT NULL,
+    comment_text TEXT NOT NULL,
+    comment_date DATE NOT NULL,
+    FOREIGN KEY (contributionid) REFERENCES tblcontribution(contributionid),
+    FOREIGN KEY (coordinatorid) REFERENCES tbluser(userid)
+);
+
+CREATE TABLE tblterms_and_conditions (
+    agreementid INT AUTO_INCREMENT PRIMARY KEY,
+    studentid INT NOT NULL,
+    academicyearid INT NOT NULL,
+    agreed_at DATE NOT NULL,
+    FOREIGN KEY (studentid) REFERENCES tbluser(userid),
+    FOREIGN KEY (academicyearid) REFERENCES tblacademicyear(academicyearid)
+);
+
+CREATE TABLE tblnotification_log (
+    notificationid INT AUTO_INCREMENT PRIMARY KEY,
+    contributionid INT NOT NULL,
+    sent_to INT NOT NULL,
+    sent_date DATE NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    FOREIGN KEY (contributionid) REFERENCES tblcontribution(contributionid),
+    FOREIGN KEY (sent_to) REFERENCES tbluser(userid)
+)
