@@ -19,6 +19,8 @@ $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if ($user && password_verify($password, $user['password_hash'])) {
 
+    session_regenerate_id(true);
+
     $_SESSION['userid'] = $user['userid'];
     $_SESSION['username'] = $user['username'];
     $_SESSION['roleid'] = $user['roleid'];
