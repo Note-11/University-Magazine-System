@@ -33,7 +33,24 @@ $username = $_POST['username'];
 $email = $_POST['email'];
 $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
 $roleid = $_POST['roleid'];
-$facultyid = $_POST['facultyid'];
+
+$facultyid = $_POST['facultyid'] ?? null;
+if($facultyid === ''){
+    $facultyid = null;
+}
+//only one cooridinator per faculty allowed
+if($roleid == 2){ // coordinator
+
+$sql = "SELECT userid FROM tbluser 
+        WHERE facultyid = :fid AND roleid = 2";
+
+$stmt = $pdo->prepare($sql);
+$stmt->execute([':fid'=>$facultyid]);
+
+if($stmt->fetch()){
+    die("This faculty already has a coordinator.");
+}
+}
 
 $sql = "INSERT INTO tbluser (username,email,password_hash,roleid,facultyid)
         VALUES (:username,:email,:password,:roleid,:facultyid)";
@@ -49,6 +66,24 @@ $stmt->execute([
 
 header("Location: manage-users.php");
 exit();
+}
+// Notify Email to coordinator if new guest registered
+if($roleid == 4){ // guest role
+
+$sql = "SELECT email FROM tbluser 
+        WHERE facultyid = :fid AND roleid = 2";
+
+$stmt = $pdo->prepare($sql);
+$stmt->execute([':fid'=>$facultyid]);
+
+$coordinator = $stmt->fetch();
+
+if($coordinator){
+    file_put_contents("../../logs/email_log.txt",
+        "New guest registered for faculty {$facultyid}\n",
+        FILE_APPEND
+    );
+}
 }
 
 /* FETCH USERS */
@@ -115,8 +150,8 @@ $faculties = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     <label>Staff Role</label>
                     <select name="roleid" class="form-control" required>
                     <option value="">Select role...</option>
-                    <option value="3">Marketing Coordinator</option>
-                    <option value="2">Marketing Manager</option>
+                    <option value="2">Marketing Coordinator</option>
+                    <option value="5">Marketing Manager</option>
                     <option value="1">Administrator</option>
                     </select>
                     </div>
@@ -178,16 +213,16 @@ $faculties = $stmt->fetchAll(PDO::FETCH_ASSOC);
                             echo '<span class="role-badge badge-admin">Administrator</span>';
                             }
                             elseif($row['roleid']==2){
-                            echo '<span class="role-badge badge-manager">Manager</span>';
-                            }
-                            elseif($row['roleid']==3){
                             echo '<span class="role-badge badge-coordinator">Coordinator</span>';
                             }
-                            elseif($row['roleid']==4){
+                            elseif($row['roleid']==3){
                             echo '<span class="role-badge badge-student">Student</span>';
                             }
-                            else{
+                            elseif($row['roleid']==4){
                             echo '<span class="role-badge badge-guest">Guest</span>';
+                            }
+                             elseif($row['roleid']==5){
+                            echo '<span class="role-badge badge-manager">Marketing Manager</span>';
                             }
                             ?>
                             </td>

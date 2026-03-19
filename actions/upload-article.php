@@ -1,9 +1,6 @@
-```php
 <?php
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
-// echo "Upload script reached";
-// exit();
 ini_set('display_startup_errors', 1);
 
 session_start();
@@ -16,11 +13,26 @@ if (!isset($_SESSION['userid'])) {
 require "../config/database.php";
 
 $studentid = $_SESSION['userid'];
+$facultyid = $_SESSION['facultyid'];
 
 $title = trim($_POST['title']);
 $description = trim($_POST['description']);
-$categoryid = intval($_POST['categoryid']);  // must come from form
+$categoryid = intval($_POST['categoryid']);
 
+/* ✅ GET ACTIVE ACADEMIC YEAR */
+$sql = "SELECT academicyearid 
+        FROM tblacademicyear 
+        WHERE is_active = 1 
+        LIMIT 1";
+
+$stmt = $pdo->query($sql);
+$academicyearid = $stmt->fetchColumn();
+
+if(!$academicyearid){
+    die("No active academic year found.");
+}
+
+/* FILE UPLOAD */
 $upload_dir = __DIR__ . "/../uploads/articles/";
 
 function uploadFile($input, $upload_dir){
@@ -57,21 +69,41 @@ $file1 = uploadFile("filepath1", $upload_dir);
 $file2 = uploadFile("filepath2", $upload_dir);
 $file3 = uploadFile("filepath3", $upload_dir);
 
+/* INSERT CONTRIBUTION */
 $sql = "INSERT INTO tblcontribution
-(studentid, categoryid, title, description, submission_date, status, filepath1, filepath2, filepath3)
-VALUES (?, ?, ?, ?, CURDATE(), 'submitted', ?, ?, ?)";
+(studentid, facultyid, categoryid, academicyearid, title, description, submission_date, status, filepath1, filepath2, filepath3)
+VALUES (?, ?, ?, ?, ?, ?, CURDATE(), 'submitted', ?, ?, ?)";
 
 $stmt = $pdo->prepare($sql);
 
 $stmt->execute([
     $studentid,
+    $facultyid,
     $categoryid,
+    $academicyearid,
     $title,
     $description,
     $file1,
     $file2,
     $file3
 ]);
+
 header("Location: ../pages/student/student-panel.php?success=1");
-die("Redirecting...");
 exit();
+/* simulate email notification */
+
+$sql = "SELECT email FROM tbluser 
+        WHERE facultyid = :fid AND roleid = 2";
+
+$stmt = $pdo->prepare($sql);
+$stmt->execute([':fid'=>$facultyid]);
+
+$coordinator = $stmt->fetch();
+
+if($coordinator){
+    // simulate email (log instead)
+    file_put_contents("../logs/email_log.txt",
+        "New submission for faculty {$facultyid} sent to {$coordinator['email']}\n",
+        FILE_APPEND
+    );
+}

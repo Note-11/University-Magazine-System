@@ -1,4 +1,6 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 if ($_SERVER["REQUEST_METHOD"] !== "POST") {
     header("Location: ../pages/auth/register.html");
     exit();
@@ -46,6 +48,41 @@ $sql = "INSERT INTO tbluser (facultyid, roleid, username, email, password_hash)
 
 $stmt = $pdo->prepare($sql);
 $stmt->execute([$facultyid, $roleid, $username, $email, $password_hash]);
+/* =========================
+   EMAIL NOTIFICATION (ONLY FOR GUEST)
+   ========================= */
+
+if($roleid == 4){ // guest only
+
+    require "../backend/send-mail.php";
+
+    // get coordinator email for same faculty
+    $sql = "SELECT email 
+            FROM tbluser
+            WHERE facultyid = ? AND roleid = 2
+            LIMIT 1";
+
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([$facultyid]);
+
+    $coordinator = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if($coordinator){
+
+        $subject = "New Guest Registered";
+
+        $body = "
+            <h3>New Guest Account Created</h3>
+            <p><strong>Name:</strong> {$username}</p>
+            <p><strong>Email:</strong> {$email}</p>
+            <p>A guest has registered in your faculty.</p>
+        ";
+
+        sendMail($coordinator['email'], $subject, $body);
+    }
+}
+
+/* ========================= */
 
 header("Location: ../pages/auth/login.html");
 exit();

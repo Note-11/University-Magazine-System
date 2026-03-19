@@ -24,15 +24,24 @@ if ($user && password_verify($password, $user['password_hash'])) {
     $_SESSION['userid'] = $user['userid'];
     $_SESSION['username'] = $user['username'];
     $_SESSION['roleid'] = $user['roleid'];
+    $_SESSION['facultyid'] = $user['facultyid'];
 
     if ($user['roleid'] == 1) {
         header("Location: ../pages/administrator/admin-dashboard.php");
         exit();
     }
-    elseif ($user['roleid'] == 3) {
-        header("Location: ../pages/student/student-panel.php");
-        exit();
+    elseif($user['roleid'] == 2){
+    header("Location: ../pages/marketing-coordinator/manage-contribution.php");
+    exit();
     }
+    elseif($user['roleid'] == 3){
+    header("Location: ../pages/student/student-panel.php");
+    exit();
+    }
+    elseif($user['roleid'] == 5){
+        header("Location: ../pages/marketing-manager/manager-dashboard.php");
+        exit();
+}
     else {
         echo "Role dashboard not implemented yet";
         exit();
